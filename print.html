@@ -1,0 +1,29 @@
+<html>
+<head>
+<title>Page a imprimer </title>
+<meta charset="utf-8"  />
+<meta name="viewport" content="width=device-width, initial-scale=1"  /> 
+<script src="js/jquery.js" /></script> 
+<script src="js/jquery.mobile-1.4.5.js" /></script> 
+<script src="js/jquery-1.4.1-vsdoc.js" /></script> 
+<script>
+//$('SelectorToPrint').printElement();
+//$("selector").printElement({printMode:'popup'});
+
+/// imprimer le titre de la page
+//$("selector").printElement({pageTitle:'thisWillBeTheNameInThePrintersLog.html'});
+$(document).ready(function(){
+  $("selector").printElement({pageTitle:'print.html'});
+});
+
+
+</script>
+</head>
+<body>
+http://"+server+"/phoneGap/scanner/json.php?c="+code+"
+<a href="my.bluetoothprint.scheme://<RESPONSEURL>">link</a>
+<a href="my.bluetoothprint.scheme://http://192.168.43.122/phoneGap/cabmob/response.php?id=45">cliqyer ici pour  imprimer</a>
+</body>
+
+
+

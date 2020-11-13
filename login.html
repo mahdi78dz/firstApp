@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<meta charset="utf-8"  />
+<meta name="viewport" content="width=device-width, initial-scale=1"  /> 
+<style>
+  #form-message{
+      background-color  : rgb(255,232,232);
+	  border:red;
+	  display:none;
+	  font-size:12px;
+	  font-weight:bold;
+	  margin-bottom: 10px;
+	  max-width:250px;  
+  }
+
+</style>
+<head>
+<title>Login</title>
+</head>
+
+<body>
+<div class="form" >
+  <label for="username" >User</label>
+  <input type='text' id="username" spellcheck="false"  />  
+  <label for="password" >Mot de passe</label>
+  <input type='password' id="password"    />
+  
+  <button type="submit" id="btn-submit" >Login</button>   
+  
+  <ul id="form-message" >
+    <li>Generic Error #1 </li> 
+  </ul>
+
+</div>
+<script>
+  const form = {
+    username: document.getElementById('username'),
+	password: document.getElementById('password'),
+	submit: document.getElementById('btn-submit'),
+	message: document.getElementById('form-message')
+  }; 
+  form.submit.addEventListener('click' , () => { 
+    
+	const request = new XMLHttpRequest();
+	 
+	request.onload = () => {
+	  console.log(request.responseText);
+	}; 
+	const requestData = 'username=${form.username.value}&password={form.password.value}';
+	console.log(requestData);
+	request.open('open','check-login.php');
+	request.setRequestHeader('Content-type','application/x-www-form-urlencoded');
+	request.send(requestData);
+	
+  });
+</script>
+</body>
+</html> 

@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title></title>
+<meta charset="utf-8"  />
+<meta name="viewport" content="width=device-width, initial-scale=1"  /> 
+<link  rel="stylesheet"  href="css/jquery.mobile-1.4.5.css"  />
+<link  rel="stylesheet"  href="css/style_2.css"  />
+<link rel="stylesheet" type="text/css" href="css/styles.css" />
+<link  rel="stylesheet"  href="css/select2.min.css"  />
+<script  type="text/javascript"  src="js/srcm.js"/></script> 
+<script src="js/jquery.js" /></script> 
+<script src="js/jquery.mobile-1.4.5.js" /></script> 
+<script src="js/jquery-1.9.0.min.js" type="text/javascript"></script>
+<script src="js/adapter-latest.js" type="text/javascript"></script>
+<script src="js/quagga.js" type="text/javascript"></script>
+<script src="js/live_w_locator.js" type="text/javascript"></script>   
+<script src="js/select2.min.js" type="text/javascript"></script>   
+<script src="js/printThis.js" type="text/javascript"></script>   
+
+<script  type="text/javascript" >
+$(document).ready(function(){
+ 			//////////////////////////////////////  initialisation ///////////////////////////////////////
+ 			var lastTicket = localStorage.getItem('lastTicket') ; 
+			 if (!lastTicket) localStorage.setItem('lastTicket','0'); 
+			$('#nbr').val(0);
+			$('#articleLu').html(0);
+			var ipServerStored = localStorage.getItem('ipServeur') ; 
+			if (ipServerStored) document.getElementById('ip-serveur').value=ipServerStored;
+			else{
+			   localStorage.setItem('ipServeur','127.0.0.1');
+			   document.getElementById('ip-serveur').value='127.0.0.1';
+			} 
+			var modConn = localStorage.getItem('modConn') ;   
+			if (!modConn){
+			   localStorage.setItem('modConn','con');
+			   modConn = localStorage.getItem('modConn') ;   
+			}			
+			if( modConn == 'con'){
+			   $('#app-titre').text('CONS. PRODUIT ONLINE');
+ 			   $('#app-titre-v').text('VENTE PRODUIT ONLINE');
+  			   $('#app-titre-i').text('INVENTAIRE PRODUIT ONLINE');
+			   $('#app-titre-j').text('JOURNAL DES VENTES ONLINE');
+			}else{
+			  $('#section-h').css('background-color','orange');
+			  $('#section-h2').css('background-color','orange');
+			  $('#section-v').css('background-color','orange');
+			  $('#section-i').css('background-color','orange');
+			  
+			  $('#app-titre').text('CONS. PRODUIT OFFLINE');
+			  $('#app-titre-v').text('VENTE PRODUIT OFFLINE');
+			  $('#app-titre-i').text('INVENTAIRE PRODUIT OFFLINE');				  
+			  $('#app-titre-j').text('JOURNAL DES VENTES OFFLINE');				  
+			}
+  			// lecture des parametres du logicil//
+			getParam('controle_stk_neg');
+			getParam('can_validate_inv_mob');
+			
+
+
+			localStorage.setItem('can_check_doc_mob','yes') ;
+			localStorage.setItem('can_add_doc_mob','yes') ;
+			localStorage.setItem('can_edit_doc_mob','yes') ;
+			localStorage.setItem('can_del_doc_mob','yes') ;																			
+			
+			localStorage.setItem('can_cons_prod_mob','yes') ;
+			localStorage.setItem('can_edit_prod_mob','yes') ;
+			localStorage.setItem('can_add_prod_mob','yes') ;
+			localStorage.setItem('can_del_prod_mob','yes') ;																			
+			//////////////////////////////////////
+			var ticketRecord = [] ;
+			var mouvementRecord = [] ;
+			localStorage.setItem('nbrLigneTicket',0);
+		    localStorage.setItem('totalTicket',0);
+			initialisation();
+ 			///////////////////////////////////////////////  fin initialisation //////////////////////////
+			///////////////////////////////////////////////  check lien //////////////////////////////////
+			var srv = $('#ip-serveur').val();
+			$.ajax('http://'+srv+'/phoneGap/cabmob/', {
+			  statusCode : {
+				   404 : function(){
+					   $('#msg').text('No link'); 
+					   $('#msg').css('color','red');
+				   },
+				   200 : function(){
+					   $('#msg').text('Good link');
+					   $('#msg').css('color','green'); 
+				   } 
+			  }
+			});
+			///////////////////////////////////////////////////////////////////////////////////////////////
+			/////////////////////////////////////////////////// on lecture cab produit ////////////////////
+			$('#cab_p').keyup(function(){
+			    var code = $(this).val();
+					reinitialiser();
+ 					if( modConn == 'con'){ 
+					     var consProd = localStorage.getItem('can_cons_prod_mob') ;
+						 if(consProd=='yes'){ 
+						   get_Prod(code,'p');
+						 }else{
+							$('#msg_p').css('color','RED');
+							$('#msg_p').html("La consultation des produits est désactivée, pour activer cette option, contactez votre administrateur.  ");
+							$('#section-message_p').slideDown(500).delay(2000).slideUp(500);						 
+						 }
+					}else{
+						 //alert(code);
+						 getProdStorage(code);
+						 //pour la lecture depuis un fichier texte
+						 //get_ProdFromTextFile(code,'p');
+					}
+			}); 
+			$("#tab-pd2").on('click','tr',function(){
+				var selectdLigne = $(this).closest('tr');
+			    var code = selectdLigne.find("td:eq(0)").text();
+				//alert(cabProd);
+				//ajouterProd(cabProd);
+				get_Prod(code,'p');
+				 $("#tab-pd2").empty();
+     			 //$('#section_v').slideUp(500);
+				 $('#section2pd').slideUp(500);
+				 //$('#section2vd').slideDown(500);
+				 $('#des_p').val('');
+				 $('#des_p').focus();			
+ 			});
+			$('#rechDesP').click(function(){
+     			 $('#section1').slideUp(500);
+				 $('#section_pd').slideDown(500);
+				 //$('#section2vd').slideDown(500);
+				 $('#cab_p').val('');
+				 $('#designation').val('');
+				 $('#prix').val('');
+				 $('#quantite').val('');
+				 $('#des_p').val('');
+				 $('#des_p').focus();
+		    });
+			$('#rechCodeP').click(function(){
+ 				 $("#tab-vd2").empty();
+    			 $("#des_v").val('');
+				 $('#section1').slideDown(500);
+				 $('#section_pd').slideUp(500);
+				 $('#section2pd').slideUp(500);
+				 $('#cab_p').focus();
+ 		    });                 
+ 			 $('#btn-modifier-produit').click(function(){ 
+			     var editProd = localStorage.getItem('can_edit_prod_mob') ;
+				 if(editProd=='yes'){ 
+				   if(check_saisie()) updateProd();
+				 }else{
+					$('#msg_p').css('color','RED');
+					$('#msg_p').html("La modification des produits est désactivée, pour activer cette option, contactez votre administrateur.  ");
+					$('#section-message_p').slideDown(500).delay(2000).slideUp(500);						 
+				 }
+			 });
+			 $('#btn-supprimer-produit').click(function(){ 
+			     var delProd = localStorage.getItem('can_del_prod_mob') ;
+				 if(delProd=='yes'){ 
+				   deleteProd();$('#cab_p').focus();
+				 }else{
+					$('#msg_p').css('color','RED');
+					$('#msg_p').html("La suppression des produits depuis les appareils mobiles est désactivée, pour activer cette option, contactez votre administrateur.  ");
+					$('#section-message_p').slideDown(500).delay(2000).slideUp(500);						 
+				 }
+			 });
+			 $('#btn-ajouter-produit').click(function(){ 
+			     var addProd = localStorage.getItem('can_add_prod_mob') ;
+				 if(addProd=='yes'){ 
+				   if(check_saisie()) insertProd(); 
+				 }else{
+					$('#msg_p').css('color','RED');
+					$('#msg_p').html("L'insertion de nouveau produit est désactivée, pour activer cette option, contactez votre administrateur.  ");
+					$('#section-message_p').slideDown(500).delay(2000).slideUp(500);						 
+				 }
+			 });
+			 $('#des_p').keyup(function(){ rechercherParDesP($(this).val());$('#cab_p').focus();});
+			 $('#btn-vider-produit').click(function(){
+				 $("#cab_p").val('');
+				 $("#designation").val('');
+				 $("#prix").val('');
+				 $("#quantite").val('');
+				 $("#prix").val(''); 
+				 $('#cab_p').focus();
+			});
+			///////////////////////////////////////////////////////////////////////////////////////////////	
+ 		    /////////////////////////////////////////////////  volet ticket ////////////////////////////
+		     $('#btn-valider-ticket').click(function(){ 
+			     var addDoc = localStorage.getItem('can_add_doc_mob') ;
+				 if(addDoc=='yes'){
+					  var nbrLigneTicket = localStorage.getItem('nbrLigneTicket');
+					  if(nbrLigneTicket > 0 ){
+						  insertTicket();
+						  reinitialiser();
+						  $('#remise').val('');
+						  reinitialiser_table();
+				     }
+				 }else{
+					//valider_ticket();
+					$('#msg_v').css('color','RED');
+					$('#msg_v').html("L'opération vente est désactivée, pour activer cette option, contactez votre administrateur.  ");
+					$('#section-message-v').slideDown(500).delay(4000).slideUp(500);	 
+					//$('#msg_v').html("Le Bon/Ticket est enregistr&eacute; d'une façon temporaire sur cet appareil,<br>Pour enregister ce Bon/Ticket sur le serveur, demander l'autorisation de votre administrateur. ");
+					///$('#section-message-v').slideDown(500).delay(4000).slideUp(500);	 
+				 }
+			 });      
+ 			 $('#btn-modifier-ticket').click(function(){ 
+			     var editDoc = localStorage.getItem('can_edit_doc_mob') ;
+				 if(editDoc=='yes') updateTicket();
+				 else{
+					//modifier_ticket();
+					$('#msg_v').css('color','RED');
+					$('#msg_v').html("La modification des Bons/Tickets est d&eacute;sactiv&eacute;e, pour activer cette option, contactez votre administrateur.  ");
+					$('#section-message-v').slideDown(500).delay(4000).slideUp(500);	 
+					//$('#msg_v').html("Le Bon/Ticket est modifi&eacute; d'une façon temporaire sur cet appareil,<br>Pour enregister ce Bon/Ticket sur le serveur, demander l'autorisation de votre administrateur. ");
+					//$('#section-message-v').slideDown(500).delay(4000).slideUp(500);	 
+				 }			 
+			 }); 
+			 $('#btn-supprimer-ticket').click(function(){
+			     if(confirm("Veuillez confirmer la suppression du document numero : '"+$('#numTicket').val()+"' !")){
+					 var delDoc = localStorage.getItem('can_del_doc_mob') ;
+					 if(delDoc=='yes') deleteTicket();
+					 else{
+						//supprimer_ticket();
+						$('#msg_v').css('color','RED');
+						$('#msg_v').html("La suppression des Bons/Tickets est désactivée, pour activer cette option, contactez votre administrateur.  ");
+						$('#section-message-v').slideDown(500).delay(4000).slideUp(500);	 
+					 }
+					 $('#numTicket').val('');
+				 }
+			 }); 
+			 $('#numTicket').keyup(function(e){	   
+			     if(event.keyCode == 13){
+				 var consDoc = localStorage.getItem('can_check_doc_mob') ;
+				 //alert('ee');
+				 if(consDoc=='yes') charger_ticket_bdd();
+			     else{
+					  //charger_ticket();
+					$('#msg_v').css('color','RED');
+					$('#msg_v').html("La consultation des Bons/Tickets est désactivée, pour activer cette option, contactez votre administrateur.  ");
+					$('#section-message-v').slideDown(500).delay(4000).slideUp(500);	 
+				 }
+			   }
+			 }); 				 
+			 $('#img-search').click(function(){
+				 var consDoc = localStorage.getItem('can_check_doc_mob') ;
+				 //alert('ee');
+				 if(consDoc=='yes') charger_ticket_bdd();
+			     else{
+					  //charger_ticket();
+					$('#msg_v').css('color','RED');
+					$('#msg_v').html("La consultation des Bons/Tickets est désactivée, pour activer cette option, contactez votre administrateur.  ");
+					$('#section-message-v').slideDown(500).delay(4000).slideUp(500);	 
+				 }
+				 }) ;		 
+			$('#rechDes').click(function(){
+     			 $('#section_v').slideUp(500);
+				 $('#section_vd').slideDown(500);
+				 //$('#section2vd').slideDown(500);
+				 $('#des_v').focus();
+		    });
+			$('#rechCode').click(function(){
+ 				 $("#tab-vd2").empty();
+    			 $("#des_v").val('');
+				 $('#section_v').slideDown(500);
+				 $('#section_vd').slideUp(500);
+				 $('#section2vd').slideUp(500);
+				 $('#cab_v').focus();
+ 		    });                 
+			$('#des_v').keyup(function(){ rechercherParDes($(this).val());}); 	 
+			$("#tab-vd2").on('click','tr',function(){
+				var selectdLigne = $(this).closest('tr');
+			    var cabProd = selectdLigne.find("td:eq(0)").text();
+				//alert(cabProd);
+				ajouterProd(cabProd);
+				 $("#tab-vd2").empty();
+     			 //$('#section_v').slideUp(500);
+				 $('#section2vd').slideUp(500);
+				 //$('#section2vd').slideDown(500);
+				 $('#des_v').val('');
+				 $('#des_v').focus();			
+ 			});                                    			                                                     
+			////////////////////////////////////////////////////////////////////////////////////////////////////			  
+			////////////////////////////////  operation inventaire ///////////////////////////////////////////////////////
+			$('#btn-valider-i').click(function(){ 
+			    var code = $('#cab_i').val();
+				if( modConn == 'con') ajouterProdInv(code);
+				else{
+					ajouterProdFromStorageInv(code);
+				}
+				if(checkProdInv(code,'cab'))  $('#msg_i').html("Le produit  d&eacute;ja inventori&eacute;.");				 
+				 var nbrLigne = $('#idata-i tr').length;
+				$('#articleLu').html(nbrLigne++);
+				 //$('#section-qte-i').slideUp(500);
+			});      
+			 $('#cab_i').keyup(function(e){
+			    //reinitialiser();
+				 var code = $('#cab_i').val();
+	 			 if(event.keyCode == 13){
+					if( modConn == 'con') ajouterProdInv(code);
+					else{
+						 ajouterProdFromStorageInv(code);
+						 // pour la lecture depuis le fichier texte
+						 //ajouterProdFromFileInv(code);	
+					}
+					if(checkProdInv(code,'cab'))  $('#msg_i').html("Le produit  d&eacute;ja inventori&eacute;.");
+					var nbrLigne = $('#idata-i tr').length;
+ 					$('#articleLu').html(nbrLigne++);
+					 //$('#section-qte-i').slideUp(500);
+  			     }
+  			 });
+			$("#idata-i").on('click','tr .tqte',function(){
+			    var selectdLigne = $(this).closest('tr');
+			  var colQte = selectdLigne.find("td:eq(2)").text();
+			  var colHidden = selectdLigne.find("input:eq(0)").val();
+			  var colHiddenUA = selectdLigne.find("input:eq(1)").val(); 
+			  var colHiddenCA = selectdLigne.find("input:eq(2)").val(); 
+			  var colHiddenPCS = selectdLigne.find("input:eq(3)").val(); 
+			  $('#section-qte-i').slideDown(500);
+			  $('#qte_tmp_i').val(selectdLigne.find("td:eq(2)").text());
+			  $('#qte_tmp_i').focus();
+			  localStorage.setItem('selected_prod',colHidden);
+			  localStorage.setItem('selected_prod_ua',colHiddenUA);
+			  localStorage.setItem('selected_prod_ca',colHiddenCA);
+			  localStorage.setItem('selected_prod_pcs',colHiddenPCS);
+			  //localStorage.setItem('selected_prod_ua',colHidden);
+			 });
+			 $('#qte_tmp_i').keyup(function(e){
+			    if(event.keyCode == 13){
+				    insertQteInv();
+				 }
+			 });
+			 $('#btn-valider-qte-i').click(function(){ insertQteInv();});
+ 			$("#idata-i").on('click','img',function(){
+				 var selectdLigne = $(this).closest('tr');
+					  selectdLigne.remove();
+					  var nbr =  $('#nbr').val();
+					  nbr--;
+					  $('#nbr').val(nbr);
+					  $('#articleLu').html(nbr);	
+					  $('#cab_i').focus();
+				      $('#msg_i').css('color','green');
+					  $('#msg_i').html("Le produit est supprim&eacute; avec succ&eacute;."); 
+					  $('#section-message-i').slideDown(800).delay(500).slideUp(500);
+			});	 
+			$('#rechDesI').click(function(){
+     			 $('#section_i').slideUp(500);
+				 $('#section_id').slideDown(500);
+				 //$('#section2vd').slideDown(500);
+				 $('#des_i').focus();
+		    });
+			$('#rechCodeI').click(function(){
+ 				 $("#tab-id2").empty();
+    			 $("#des_i").val('');
+				 $('#section_i').slideDown(500);
+				 $('#section_id').slideUp(500);
+				 $('#section2id').slideUp(500);
+				 $('#cab_i').focus();
+ 		    }); 
+			 $('#btn-consulter-inventaire').click(function(){ consulter_inventaire(); }); 		 
+			 $('#btn-vider-inventaire').click(function(){ effacerInventaire(); });			
+			 $('#btn-save-inventaire').click(function(){ validerInventaire();});  
+			 $('#btn-modif-inventaire').click(function(){ modifierInventaire();});			 
+			 $('#btn-viderEcran-inventaire').click(function(){ viderEcran(); });
+			 
+			 $('#des_i').keyup(function(){ rechercherParDesI($(this).val());}); 	 
+			 $("#tab-id2").on('click','tr',function(){
+				var selectdLigne = $(this).closest('tr');
+			    var cabProd = selectdLigne.find("td:eq(0)").text();
+				//alert(cabProd);
+				ajouterProdInv(cabProd);
+				 $("#tab-id2").empty();
+     			 //$('#section_v').slideUp(500);
+				 $('#section2id').slideUp(500);
+				 //$('#section2vd').slideDown(500);
+				 $('#des_i').val('');
+				 $('#des_i').focus();			
+ 			});  
+ 
+			////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			///////////////////////////////  fin invenaire ///////////////////////////////////////////////////////////////
+
+
+
+ 		    //////////////////////// /////OPERATION VENTE/ ////////////////////////////////////////////////////////////
+		    $('#btn-valider').click(function(){
+			      var nbr = $('#nbr').val();
+						var idNew = true;
+					    var code = $('#cab_v').val();
+						if( modConn == 'con') ajouterProd(code);
+						else{
+							 //getProdStorage(code);
+							 //pour la lecture depuis un fichier texte
+							 ajouterProdFromFile(code);				 
+						}
+ 			 }); 
+			$("#idata").on('click','tr .tqte',function(){
+				   //alert('ee');
+				  var selectdLigne = $(this).closest('tr');
+				  var colQte = selectdLigne.find("td:eq(1)").text();
+				  var colHidden = selectdLigne.find("input:eq(0)").val();
+				  var colHiddenUA = selectdLigne.find("input:eq(1)").val();
+				  var colHiddenCA = selectdLigne.find("input:eq(2)").val();
+				  var colHiddenPCS = selectdLigne.find("input:eq(3)").val();
+				  $('#section-qte').slideDown(500);
+				  $('#qte_tmp').val(selectdLigne.find("td:eq(1)").text());
+				  $('#qte_tmp').focus();
+				  localStorage.setItem('selected_prod',colHidden);
+				  localStorage.setItem('selected_prod_ua',colHiddenUA);
+				  localStorage.setItem('selected_prod_ca',colHiddenCA);
+				  localStorage.setItem('selected_prod_pcs',colHiddenPCS);
+			  	  var prodUa = localStorage.getItem('selected_prod_ua');
+				  var prodCa = localStorage.getItem('selected_prod_ca');
+				  var prodPcs = localStorage.getItem('selected_prod_pcs');
+				  //alert(prodCa);
+				  //alert(prodPcs);
+				  if(prodUa=='PLT'){
+					  $('#metre').html(prodCa);			  
+					  $('#piece').html(prodPcs);			  
+					  $('#section-qte-propo').slideDown(500);			  
+				  }
+			 });
+ 			$('#nbrCrt').click(function(){
+				$('#qte_tmp').val(parseFloat($('#mlnbrCrt').html()));
+				var detail_ca = localStorage.getItem('detail_ca');
+				var code_p = localStorage.getItem('selected_prod');
+				var prodCa = localStorage.getItem('selected_prod_ca');
+				var prodPcs = localStorage.getItem('selected_prod_pcs');
+				var chd = ' ('+$('#nbrCrt').html()+' cartons)';
+				$("#det_plt"+code_p).html(chd);
+				insertQte();
+				});
+ 			$('#mlnbrCrt').click(function(){
+				$('#qte_tmp').val(parseFloat($('#mlnbrCrt').html()));
+				var detail_ca = localStorage.getItem('detail_ca');
+				var code_p = localStorage.getItem('selected_prod');
+				var prodCa = localStorage.getItem('selected_prod_ca');
+				var prodPcs = localStorage.getItem('selected_prod_pcs');
+				var chd = ' ('+$('#nbrCrt').html()+' cartons)';
+				$("#det_plt"+code_p).html(chd);
+				insertQte();
+				});
+ 			
+			
+			$('#pcsnbrCrt').click(function(){
+				$('#qte_tmp').val(parseFloat($('#mlnbrCrtPcs').html()));
+				var detail_ca = localStorage.getItem('detail_ca');
+				var code_p = localStorage.getItem('selected_prod');
+				var prodCa = localStorage.getItem('selected_prod_ca');
+				var prodPcs = localStorage.getItem('selected_prod_pcs');
+				var chd = ' ('+$('#pcsnbrCrt').html()+' cartons et '+$('#pcsnbrpcs').html()+' pieces)';
+				//var chd = code_p+':('+$('#pcsnbrCrt').html()+' cartons et '+$('#pcsnbrpcs').html()+' pieces)'+':'+prodCa+':'+prodPcs;
+				$("#det_plt"+code_p).html(chd);
+				insertQte();
+				});
+ 			$('#mlnbrCrtPcs').click(function(){
+				$('#qte_tmp').val(parseFloat($('#mlnbrCrtPcs').html()));
+				var detail_ca = localStorage.getItem('detail_ca');
+				var code_p = localStorage.getItem('selected_prod');
+				var prodCa = localStorage.getItem('selected_prod_ca');
+				var prodPcs = localStorage.getItem('selected_prod_pcs');
+				var chd = ' ('+$('#pcsnbrCrt').html()+' cartons et '+$('#pcsnbrpcs').html()+'  pieces)';
+				$("#det_plt"+code_p).html(chd);
+				insertQte();
+				});
+ 			$('#pcsnbrpcs').click(function(){
+				$('#qte_tmp').val(parseFloat($('#mlnbrCrtPcs').html()));
+				var detail_ca = localStorage.getItem('detail_ca');
+				var code_p = localStorage.getItem('selected_prod');
+				var prodCa = localStorage.getItem('selected_prod_ca');
+				var prodPcs = localStorage.getItem('selected_prod_pcs');
+				var chd = ' ('+$('#pcsnbrCrt').html()+' cartons  et '+$('#pcsnbrpcs').html()+'  pieces)';
+				$("#det_plt"+code_p).html(chd);
+			    insertQte();
+			});			
+			
+
+ 			$("#idata").on('click','tr .tprix',function(){
+			  var selectdLigne = $(this).closest('tr');
+			  var colQte = selectdLigne.find("td:eq(1)").text();
+			  var colHidden = selectdLigne.find("input:eq(0)").val();
+			  var colHiddenUA = selectdLigne.find("input:eq(1)").val();
+			  var colHiddenCA = selectdLigne.find("input:eq(2)").val();
+			  var colHiddenPCS = selectdLigne.find("input:eq(3)").val();
+			  $('#section-prix').slideDown(500);
+			
+			  $('#prix_tmp').val(selectdLigne.find("td:eq(2)").text());
+			  $('#prix_tmp').focus();
+			  localStorage.setItem('selected_prod',colHidden);
+			  localStorage.setItem('selected_prod_ua',colHiddenUA);
+			  localStorage.setItem('selected_prod_ca',colHiddenCA);
+			  localStorage.setItem('selected_prod_pcs',colHiddenPCS);
+			  
+			 });
+			$("#idata").on('click','img',function(){
+ 			  var selectdLigne = $(this).closest('tr');
+			  var detail_ca="";
+			  selectdLigne.remove();
+			  var total =0;
+			  $('#idata tr').each(function() {
+				  var qteProd = parseFloat($(this).find('td').eq(1).html());
+				  var prixProd = parseFloat($(this).find('td').eq(2).html());
+			});
+			       
+			   calculTotal();
+			  $('#cab_v').focus();
+			  //$('#mt_total').html(total+" Da");
+			});
+			$('#btn-valider-qte').click(function(){insertQte();  });
+			$('#btn-valider-prix').click(function(){ insertPrix();});
+			$('#qte_tmp').keyup(function(e){ 
+		  	     var prodUa = localStorage.getItem('selected_prod_ua');
+				 if(prodUa=='PLT') calculPalette($('#qte_tmp').val());
+				 if(event.keyCode == 13){ 
+			     insertQte();
+			  } 
+			});
+
+			$('#prix_tmp').keyup(function(e){ if(event.keyCode == 13) insertPrix(); });
+ 			$('#cab_v').keyup(function(e){
+				 var code = $('#cab_v').val();
+	 			 if(event.keyCode == 13){
+			
+					if( modConn == 'con') ajouterProd(code);
+					else ajouterProdFromFile(code);				 
+				 }
+ 			 });
+ 			$('#img-refrech').click(function(){  
+			     reinitialiser_table();   
+				 reinitialiser(); 
+				 $('#remise').val(''); 
+				 $('#numTicket').val(''); 
+				 $('#versement').val('');	 
+				 getListeClientM2(''); 
+				 $('#client option:selected').val(''); 
+				 $('#section-client').slideUp(500);
+				 $('#section-qte').slideUp(500);
+				 $('#section-qte-propo').slideUp(500);
+			}); //$('#section-client'}.slideUp(500);}); 
+ 		    $('#img-clt').click(function(){    $('#section-client').slideToggle(500); }); 
+			$('#img-rapport').click(function(){ consulter_document(); }); 			/////////////////////////////////////////////////////
+		    /////////////////////////////////////////////////////////////   volet produit /////////////////////////////////////////
+ 			$('body').on('click','img',function(){
+				  $('#section2').slideToggle(500);
+				  $('#section5').slideToggle(500);
+				  var code = $('#cab_p').val();
+				  //$('#msg').text(code);
+				  get_Prod(code,'p');
+			});
+
+
+		 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////  
+		
+		 /////////////// ////////// PARAMETRES///////////////////////////////////////////////////////////////////
+		 $('#btn-setings').click(function(){
+			 $('#section-setings').slideDown(500);
+			 $('#ip-serveur').focus();
+			 $('#msg-p').text('');
+			 var ipServerStored = localStorage.getItem('ipServeur') ; 
+			 
+			 //var server = $('#ip-serveur').val();
+			 //var ipServer = document.getElementById('ip-serveur').value;document.getElementById('ip-serveur').value = ipServerStored;
+			  if(ipServerStored) $('#ip-serveur').val(ipServerStored);
+			  else{
+				 localStorage.setItem('ipServeur','127.0.0.1');
+				 //document.getElementById('ip-serveur').value='127.0.0.1';
+				 $('#ip-serveur').val('127.0.0.1');
+			  }
+			  //alert( $('#ip-serveur').val());
+		   });
+		 
+		 $('#btn-save').click(function(){
+			 var ipServer = document.getElementById('ip-serveur').value;
+					  if ((ipServer != '')&&(( ipServer != null ))) localStorage.setItem('ipServeur',ipServer);
+					  else{
+						 localStorage.setItem('ipServeur','127.0.0.1');
+						 document.getElementById('ip-serveur').value='127.0.0.1';
+					  }
+					  var ModeConn = $('#mode-connexion').val();
+					  localStorage.setItem('modConn',ModeConn);
+					   document.getElementById('form-parametre').submit();
+					  $('#msg-p').html('Mise à jour terminée.');
+					 //});
+					  //save_parameters();
+		 });
+		 $('#btn-synch').click(function(){
+			rechercherAllProd();
+		 });
+		 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		 $('#acc-vente').click(function(){ localStorage.setItem('selectedVolet','v'); $('#cab_v').focus(); }); 
+		 $('#acc-produit').click(function(){ localStorage.setItem('selectedVolet','p'); $('#cab').focus(); }); 
+		 //alert($('#nbr').val());
+		 ///////////////////////////////////////////  client ////////////////////////////////////////////////////////
+		 //getListeClient();
+	    getListeClientM2('');
+		$('#img-search').click(function(){
+				   //alert($('#client option:selected').text());  
+				   //var ss = $('#client option:selected').val();
+				   //var tt = $('#client option:selected').text();
+				   //html = '<option value="' + ss +'" selected="selected"  >' + tt + '</option>';
+				   $('#client').append(html);
+				   reinitialiser_table();   
+				   reinitialiser(); 
+				   charger_ticket(); 
+		}); 
+ 
+       //var nom = getInfoClient(19);
+	   //alert(nom);
+	   //getInfoClient(19);
+		  /////////////////////////////////////////// fin client /////////////////////////////////////////////////////
+		  
+		  $('#btn-imprimer-ticket').click(function(){
+		    $("#enteteBon").empty();
+			//$("#detailBon").empty();
+			imprimerBon();
+			//$("#printZone").printThis();
+		  });
+		  $('#remise').keyup(function(e){
+				if (isNaN($('#remise').val())||parseFloat($('#remise').val())<0.0){
+				   $('#msg_p').css('color','red');
+				   $('#msg_p').html("Veuillez saisir une remise valide.");
+				   $('#section-message_p').slideDown(500).delay(900).slideUp(500);			 
+				   $('#remise').css('background-color','red');
+				   $('#remise').focus();
+				   $('#remise').val(0);
+				}else{
+					 $('#remise').css('background-color','white');
+ 				}
+			    calculTotal();
+		  });
+		  ///////////////////////////  volet journal vente ///////////////////////////
+		  $("#idata-j").on('click','tr',function(){
+			  var selectdLigne = $(this).closest('tr');
+			  var code_d = selectdLigne.find("td:eq(0)").text();
+			  var consDoc = localStorage.getItem('can_check_doc_mob') ;
+			  //
+			  if(consDoc=='yes'){  
+				 window.location.href='#vente';
+				 $('#numTicket').val(code_d);				
+				 charger_ticket_bdd();
+			  }
+ 			 });
+			 ///////////////////////////////////////////////////////////////////////
+  });
+ </script>
+   <bgsound  src='barcode.wav' autostart='false' loop='1'>
+</head>
+<body>
+ 
+ 
+<!----------------------------------------- Page acceuil  ------------------------------------------------------------->
+<div data-role="page" id="acceuil">
+	<div  id="div-header"    data-role="header">
+      <label>ILINE-SOFT</label>
+ 	</div>
+     <fieldset id="section-acceuil">
+	 	<table id="tab-acceuil">
+		<tr>
+        <td width="50%"   >
+    			<div   class="acc-btn" style="background-color:rgba(40 , 170 , 200 ,  0.6);" onClick="reinitialiser();reinitialiser_table();window.location='#vente'">Vente</div>
+   		</td>
+		 <td width="50%"  >
+			<div  class="acc-btn" style="background-color:rgba(140 , 150 , 110 ,  0.2);" onClick="reinitialiser();reinitialiser_table();window.location='#page1'">Produit</div>
+		</td>
+		</tr>
+		<tr><td width="50%">
+		    <div   class="acc-btn" style="background-color:rgba(200 , 150 , 140 ,  0.6);" onClick="reinitialiser();reinitialiser_table();window.location='#fournisseur'">Fournisseur</div>
+		    </td>
+		    <td width="50%">
+			<div   class="acc-btn"  style=" background-color:rgba(250 , 190 , 120 ,  0.3);" >Client</div>
+			</td>
+		</tr>
+		<tr><td width="50%">
+		    <div   class="acc-btn" style=" background-color:rgba(230 , 100 , 200 ,  0.3);" onClick="reinitialiser();reinitialiser_table();window.location='#inventaire'">Inventaire</div></td>
+		    <td width="50%"  >
+			<div  class="acc-btn" style=" background-color:rgba(240 , 240 , 200 ,  0.9);"  onClick="reinitialiser();reinitialiser_table();window.location='#parametre'">Paramètres</div>
+			</td>
+		</tr>
+		</table>
+  	</fieldset>
+ 	<div id="div-footer" data-role="footer" data-position="fixed">
+		<h4></h4>
+	</div><!-- /footer -->
+</div>
+<!---------------------------------------- fin page acceuil ---------------------------------------------------------->
+
+<!------------------------------------------ page produit ------------------------------------------------------------>  
+ <div data-role="page" id="page1">
+   	<div  id="div-header-p"  data-role="header">
+      <label >ILINE-SOFT</label>
+ 		<a href="#acceuil"  id="btn-home" data-direction="reverse"  class="ui-btn"  ><</a>
+	    <a href="#parametre" id="btn-home" data-direction="reverse"  class="ui-btn"  >Settings</a>
+ 	</div>
+   <fieldset id="section-h"  >
+       <span id="app-titre"></span> 
+   </fieldset>
+    <fieldset id="section1">
+	  <legend>Code produit</legend>
+		<label>Saisissez un code produit&nbsp;&nbsp;<span id="rechDesP">(Désignation)</span></label>
+		<table>
+		<tr>
+		<td width="90%">
+		<input  type="hidden" id="code_p" name="code_p"  />
+ 		<input  type="text" id="cab_p" name="cab_p"  autofocus  placeholder="Code Produit"  required=""  />
+		</td>
+		<td width="20%">
+ 		<img id="img-cab" src="img/cab2.gif"   > 
+		</td></tr>
+		</table>
+    </fieldset>
+    <fieldset id="section_pd">
+	  <legend>Désignation produit</legend>
+       <label>Saisissez une désignation&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span id="rechCodeP">(Code)</span></label>
+        
+        <table id="cp">	
+		<tr>
+		<td width="90%">
+ 		<input  type="text" id="des_p" name="des_p"  autofocus  placeholder="Désignation Produit"  required=""  />
+		</td>
+		<td width="20%">
+ 		</td></tr>
+		</table>
+    </fieldset>
+    <fieldset id="section2pd">
+	  <legend>Liste produit</legend>		
+ 		<table   id="idata-pd2" style="display:none"  >
+		<tr  >
+		<th width="12%"  align="center">Code</th>
+        <th width="58%"  align="left">Désignation</th>
+		<th width="13%" align="center" >Qte</th>
+		<th width="17%" align="right" >Prix&nbsp;</th>
+		</tr>
+		</table>
+ 		 <table   id="tab-pd2"  >
+ 		</table>
+ 	  </fieldset> 
+    
+    <fieldset id="section2">
+	  <legend>Détail Produit</legend>		
+		<input class="input1" type="text" id="designation" name="designation"  placeholder='Désignation'   />
+		<table id='info'>
+		<tr><td width="10%">
+		<label>Prix&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>
+		</td>
+		<td width="90%">
+		<input class="input1" type="text" id="prix" style="text-align:center" name="prix"   placeholder='Prix'  >
+		</td></tr>
+		<tr><td>
+		<label>Quantité&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>
+		</td>
+		<td>
+		<input class="input1" type="text" id="quantite" name="quantite"   placeholder='Quantité'    >
+		</td></tr>
+		 
+		</table>
+	  </fieldset>
+ 
+	  <fieldset id="section_update">
+        <table>
+        <tr>
+ 		<td width="33%"><button  class="btn-valider"   id="btn-vider-produit" />Vider</button></td>
+		<td width="33%"> 
+        <button  class="btn-valider"   id="btn-ajouter-produit" />Ajouter</button>
+        <button  class="btn-valider"   id="btn-modifier-produit" />Modifier</button>
+        </td>
+		<td width="33%"> <button  class="btn-valider"   id="btn-supprimer-produit" />Supprimer</button></td>
+		</td>
+		</tr>
+		</table>
+      </fieldset>
+     <fieldset id="section-message_p"> 
+ 	  <p>&nbsp; <span id="msg_p"></span></p> 
+	</fieldset>
+
+     <fieldset id="section5">
+	<legend>Scan. produit</legend>
+		<section id="container" class="container">
+        <div class="controls">
+ 			 <div id="interactive" class="viewport"></div>
+			 <fieldset class="reader-config-group" id="section7">
+                <label>
+ 						<table id='set-scan'>
+						<tr><td width="10%"><label>Type</label></td>
+						<td width="90%">
+						 <select name="decoder_readers" style="font-size:12px;">
+										<option value="code_128" >Code 128</option>
+										<option value="code_39">Code 39</option>
+										<option value="code_39_vin">Code 39 VIN</option>
+										<option value="ean" selected="selected">EAN</option>
+										<option value="ean_extended">EAN-extended</option>
+										<option value="ean_8">EAN-8</option>
+										<option value="upc">UPC</option>
+										<option value="upc_e">UPC-E</option>
+										<option value="codabar">Codabar</option>
+										<option value="i2of5">Interleaved 2 of 5</option>
+										<option value="2of5">Standard 2 of 5</option>
+										<option value="code_93">Code 93</option>
+									</select>
+						</td></tr>
+						<tr><td>
+						<label>Caméra</label>
+						</td>
+						<td>
+						<select name="input-stream_constraints" id="deviceSelection"></select>
+						</td></tr>
+						</table>
+                </label>
+            </fieldset>
+         </div>
+     </section>
+   </fieldset>	
+          <div id="result"></div>
+ </div>
+ <!----------------------------------------------------  fin page produit ------------------------------------------------------ -->  
+
+	 
+</div><!-- /page -->
+<!----------------------------------------- Page de parametres de l application --------------------------------------------------------->
+<div data-role="page" id="parametre">
+	<div     id="div-header-s"  data-role="header">
+      <label >ILINE-SOFT</label>
+	   	<a href="#acceuil"  id="btn-home" data-direction="reverse"  class="ui-btn"  ><</a>
+ <a href="http://192.168.43.122/phoneGap/cabmob/telecharge.php"  id="btn-home" data-direction="reverse"  class="ui-btn"  >Fichier</a>
+	</div>
+ 
+    <fieldset id="section-setings">
+	 <legend>Paramètres</legend> 
+ 	  <table>
+		<tr>
+		<td width="30%">
+		<label>IP Serveur</label>
+		</td>
+		<td width="50%">
+ 		<input  type="text" id="ip-serveur"  placeholder="Adresse Serveur"  value=""  />
+		</td>
+		<td width="50%">
+		 
+ 		</td>
+		</tr>
+		<tr>
+		<td width="50%">
+		<label>Mode Connexion</label>
+		</td>
+		<td width="50%">
+		<form  id="form-parametre" target="_self" method="post"  >
+		<select id="mode-connexion" style="font-size:11px;">
+			<option value="con">Connecté</option>
+			<option value="decon">Non connecté</option>
+ 		</select>
+		</form>
+		</td>
+		<td width="30%">
+		 
+ 		</td>
+		</tr>
+
+		<tr>
+		<td width="30%">
+		 
+		</td>
+		<td width="40%">
+		</td>
+		<td width="30%">
+		<button type="button" class="ui-btn" id="btn-save"   />Valider</button>
+ 		</td>
+		</tr>
+		<tr>
+		<td width="30%">
+		 
+		</td>
+		<td width="40%">
+ 		
+		</td>
+		<td width="30%">
+		<button type="button" id="btn-synch" class="ui-btn"   />Synchroniser</button>
+ 		</td>
+		</tr>
+
+
+		</table>
+ 	</fieldset>
+     <fieldset id="section-message-parametre"> 
+ 	  <p>&nbsp; <span id="msg-p"></span></p> 
+	</fieldset>
+
+	<div data-role="footer" data-position="fixed">
+		<h4>Page Footer</h4>
+	</div><!-- /footer -->
+</div>
+<!------------------------------------------------- fin page paramerte --------------------------------------------------->
+ 
+
+<!----------------------------------  page vente ---------------------------------------->
+<div data-role="page" id="vente">
+   	<div  id="div-header"  data-role="header">
+      <label >ILINE-SOFT</label>
+ 		<a href="#acceuil"  id="btn-home" data-direction="reverse"  class="ui-btn"  ><</a>
+	    <a href="#parametre" id="btn-home" data-direction="reverse"  class="ui-btn"  >Settings</a>
+ 	  
+	</div>
+   <fieldset id="section-v" >
+       <span id="app-titre-v"></span> 
+   </fieldset>	
+    
+    <fieldset id="section_v">
+	  <legend>Code produit</legend>
+		<label>Saisissez un code produit&nbsp;&nbsp;<span id="rechDes">(Désignation)</span></label>
+        
+        <table id="cp">	
+		<tr>
+		<td width="90%">
+		<input  type="hidden"  id="code_p_v" name="code_p_v"  />
+		<input  type="hidden" id="nbr" name="nbr"  />		
+ 		<input  type="text" id="cab_v" name="cab_v"  autofocus  placeholder="Code Produit"  required=""  />
+		</td>
+		<td width="20%">
+ 		<button   class="btn-valider"  id="btn-valider"  value="valider" />Valider</button> 
+		</td></tr>
+		</table>
+    </fieldset>
+    <fieldset id="section_vd">
+	  <legend>Désignation produit</legend>
+<label>Saisissez une désignation produit&nbsp;&nbsp;<span id="rechCode">(Code)</span></label>
+
+
+		<table id="cp">	
+		<tr>
+		<td width="90%">
+		<input  type="hidden"  id="code_p_v" name="code_p_v"  />
+ 		<input  type="text" id="des_v" name="des_v"  autofocus  placeholder="Désignation Produit"  required=""  />
+		</td>
+		<td width="20%">
+ 		 
+		</td></tr>
+		</table>
+    </fieldset>
+    <fieldset id="section2vd">
+	  <legend>Liste produit</legend>		
+ 		<table   id="idata-vd2" style="display:none"  >
+		<tr  >
+		<th width="12%"  align="center">Code</th>
+        <th width="58%"  align="left">Désignation</th>
+		<th width="13%" align="center" >Qte</th>
+		<th width="17%" align="right" >Prix&nbsp;</th>
+		</tr>
+		</table>
+ 		 <table   id="tab-vd2"  >
+ 		</table>
+ 	  </fieldset> 
+
+    <fieldset id="section-qte" class="section-qte">
+	  <legend>Quantité</legend>
+		<label>Saisissez une quantité</label>
+		<table id="tab-qte">
+		<tr>
+		<td width="90%">
+ 		<input  type="text" id="qte_tmp"   autofocus  placeholder="Quantité"  required=""  />
+		</td>
+		<td width="10%"><button class="btn-valider"  id="btn-valider-qte"  value="valider" />Valider</button> 
+		</td></tr>
+		
+		</table>
+    </fieldset>
+    <fieldset id="section-qte-propo" class="section-qte">
+	  <legend>Propositions</legend>
+		<label>Sélectionnez un choix :</label>
+  		<table   class="idata-vqte" style=" width:80%;text-align:center"  >
+		<tr  >
+ 		<th width="25%" >Metre/Carton</th>
+		<th width="25%" ></th>
+		<th width="25%" >Piece/Carton</th>
+		<th width="25%" ></th>
+		</tr>
+		<tr  >
+ 		<td  ><span id="metre" ></span></td>
+		<td  ></td>
+		<td  ><span id="piece" ></span></td>
+		<td  ></td>
+		</tr>
+        </table>
+        <br>
+        <table   class="idata-vqte" style=" width:80%;text-align:center"  >
+		<tr  >
+		<th colspan="4"  >PROPOSITIONS</th>
+		</tr>        
+		</table>
+        <br>
+        <table   id="idata-vqte" style=" width:80%;text-align:center"  >
+
+        <tr  >
+		<th width="25%" >Carton</th>
+		<th width="25%" ></th>
+		<th width="25%" >Carton</th>
+		<th width="25%" >Piece</th>
+		</tr>
+        
+		<tr  >
+		<td  ><span id="nbrCrt" ></span></td>
+		<td  ></td>
+		<td  ><span id="pcsnbrCrt" ></span></td>
+		<td  ><span id="pcsnbrpcs" ></span></td>
+		</tr>        
+		<tr  >
+		<td  ><span id="mlnbrCrt" ></span></td>
+		<td  ></td>
+		<td  ><span id="mlnbrCrtPcs" ></span></td>
+		<td  ></td>
+		</tr>
+		</table>
+
+
+    </fieldset>
+
+
+ <fieldset id="section-client" class="section-qte">
+	  <legend>CLIENT</legend>
+ 		<table id="idata-clt">
+		<tr>
+		<td width="30%" align="left"  ><p>Client&nbsp;&nbsp;&nbsp;</p></td> 		
+		<td width="70%" align="left" valign="middle"  ><div id="divClt" >
+        <select name="client" id="client"  > </select>
+        </div></td>
+        </tr>
+         <tr>
+		<td width="30%" align="left"> <p>Versement&nbsp;&nbsp;&nbsp;</p>		
+        
+		</td>
+		<td width="70%" align="left" valign="middle"> 
+         <input  type="text" id="versement"   autofocus  placeholder="Versement"  required=""    /></td>
+        </tr>
+		</table>
+    </fieldset>
+    <fieldset id="section-prix">
+	  <legend>Prix</legend>
+		<label>Saisissez un prix</label>
+		<table id="tab-qte">
+		<tr>
+		<td width="90%">
+ 		<input  type="text" id="prix_tmp"   autofocus  placeholder="Prix"  required=""  />
+		</td>
+		<td width="10%">
+ 		<button class="btn-valider"  id="btn-valider-prix"  value="valider" />Valider</button> 
+		</td></tr>
+
+		</table>
+    </fieldset>
+
+
+    <fieldset id="section-total">
+	  <legend>Monant total</legend>
+		<table id="tab-total">
+		<tr>
+		<td width="100%" align="right"><span id="mt_total"></span></td></tr>
+		</table>
+    </fieldset>
+	 <fieldset id="section-message-v"> 
+ 	  <p>&nbsp; <span id="msg_v"></span></p> 
+	</fieldset>
+
+    <fieldset id="section2v">
+	  <legend>Détail  Bon / Ticket</legend>		
+ 		<table   id="idata-v"  >
+		<tr  >
+		<th width="45%" >Désignation</th>
+		<th width="10%" >Qte</th>
+		<th width="20%" >Prix</th>
+		<th width="25%" >Total</th>
+		<th width="5%" >Opt</th>
+		</tr>
+		</table>
+ 		 <table   id="idata"  >
+ 		</table>
+ 	  </fieldset>
+	  
+	  
+    <fieldset id="section-v-valider">
+		<table id="cp">	
+		<tr>
+		<td width="40%" colspan="2"><input  type="text" id="numTicket"   autofocus  placeholder="Ticket"  required=""  />
+		<input  type="hidden" id="designation_tmp"     />
+		</td>
+		<td align="center" ><img class="img-search" id="img-search"  src="img/b_search.gif"   > </td>
+		<td align="left" width="15%"><img class="img-search" id="img-refrech"  src="img/refrech.gif"   ></td>
+		<td align="left" width="15%"><img class="img-search" id="img-clt"  src="img/four_add.gif"   ></td>
+		<td width="15%" align="right"><button class="btn-valider"   id="btn-valider-ticket"  />Valider</button></td>
+		</td>
+		</tr>
+
+		<tr>
+        <td width="10%" style="text-align:left"><p>Remise</p>
+		</td> 
+		<td width="30%" style="text-align:right"><input  type="text" id="remise"   autofocus    required  />
+		</td> 
+		<td width="15%" align="center"><img class="img-search" id="img-rapport"  src="img/rapport.gif" 
+        onClick="window.location='#journal'"  ></td>
+		<td width="15%"><button   id="btn-imprimer-ticket" > Imprimer</button></td>
+		<td width="15%"><button   id="btn-modifier-ticket"  />Modifier</button></td>
+		<td width="15%"><button   id="btn-supprimer-ticket"  />Supprimer</button></td>
+		</td>
+		</tr>
+		</table>
+    </fieldset>	
+    
+     <div id="printZone" >
+        <table   id="enteteBon"  >
+ 		</table>
+<br>
+	  <table id="idBon" cellspacing="0" style="width: 100%; border: solid 1px black;text-align: center; border-right:solid 1px black; font-family:Arial, Helvetica, sans-serif" >
+	  </table>
+      <br>
+	  <table id="clientBon"  style="width: 100%; font-family:Arial, Helvetica, sans-serif" >
+	  </table>
+      <br>
+        <table    id="detailBon"  style="width: 100%; border-collapse: collapse;font-family:Arial, Helvetica, sans-serif" >
+  		</table>
+      <br>
+        <table   id="totalBon"  cellspacing="0" style="width: 100%; border: solid 1px black;text-align: center;">
+ 		</table>
+      <br>
+	  <table id="totalText"  style="width: 100%;font-family:Arial, Helvetica, sans-serif" >
+	  </table> 
+      <br>
+      <table id="detailCredit"  style="width: 100%;font-family:Arial, Helvetica, sans-serif" >
+	  </table> 
+      <br>
+	  <table id="textComment"  style="width: 100%;font-family:Arial, Helvetica, sans-serif" >
+	  </table> 
+  	  </table>
+      <br>
+      <table  style="width: 100%;font-family:Arial, Helvetica, sans-serif" >
+      <tr>
+      <th style='width:100%; text-align: right; font-size: 12px;;font-family:Arial, Helvetica, sans-serif;'>SERVICE COMMERCIAL</th>
+      <tr>
+	  </table>        
+      <br> <br> <br>
+       <div id="section-talonBon">
+      <table id="talonBonMag" cellspacing="0" style="width: 100%; border: solid 1px black; background: #FFFFFF; text-align: center; font-size: 10pt;;font-family:Arial, Helvetica, sans-serif;">
+        <tr>
+          <th  height="30" valign="middle" style="width: 100%;text-align:left; font-size:13px;"><b>&nbsp;DETAIL MAGASIN </b></th>
+        </tr>
+      </table>
+    <br>
+        <table   id="talonBon"  cellspacing="0" style="width: 100%; border-collapse: collapse; border: solid 1px black;text-align: center;;font-family:Arial, Helvetica, sans-serif;">
+         </table>
+      <br>
+
+     <table id="talonBonInf" cellspacing="0" style="width: 100%; border-collapse: collapse; border: solid 1px black;text-align: center; font-size: 10pt;;font-family:Arial, Helvetica, sans-serif;">
+        <tr>
+          <th  style="width: 20%;text-align: center; font-size:11px;border-bottom:1px black;border-right:1px black;border: solid 1px black;">Numero Bon</th>
+          <th  style="width: 20%;text-align: center; font-size:11px;border-bottom:1px black;border-right:1px black;border: solid 1px black;">Date Bon</th>
+          <th  style="width: 20%;text-align: center; font-size:11px;border-bottom:1px black;border-right:1px black;border: solid 1px black;">Date Livraison</th>
+          <th  style="width: 20%;text-align: center; font-size:11px;border-bottom:1px black;border-right:1px black;border: solid 1px black;">Cachet</th>
+          <th  style="width: 20%;text-align: center; font-size:11px;border-bottom:1px black;border: solid 1px black; ">Nombre Article</th>
+        </tr>
+         <tr>
+          <td height="30" valign="middle" style='text-align:center;border: solid 1px black; border-bottom:solid 1px black;font-size:12px;'  ><span id="idDocPrint" ></span></td>
+          <td valign="middle" style="font-size:12px;text-align: center;border: solid 1px black;border-right:1px black;border-bottom:1px black;"  ><I><em><span id="DateDocPrint" ></span></em></I></td>
+          <td valign="middle" width='20%' style="font-size:12px;text-align: center ;border: solid 1px black;border-right:1px black;border-bottom:1px black;" ></td>
+          <td valign="middle" width='20%' style="font-size:12px;text-align: center;border: solid 1px black;border-bottom:1px black;border-right:1px black;" ></td>
+          <td valign="middle" width='20%' style="font-size:12px;text-align: center;border: solid 1px black;border-bottom:1px black;" ><span id="nbrArtTalon" ></span></td>
+        </tr>
+        <tr>
+          <td colspan="5" style="font-size:12px;text-align:left;border-bottom:1px black;border: solid 1px black;"  >&nbsp;Client : <span id="infoClientTalon" ></span></td>
+        </tr>
+        <tr >
+          <td colspan="5" height="40" style="font-size:12px;text-align:left;" valign="top"  align="left" >&nbsp;Commentaires :</td>
+        </tr>  
+        </table>
+ </div>
+      </div>
+          </div><!-- /page -->  
+    <div data-role="footer" data-position="fixed">
+		<h4>Page Footer</h4>
+	</div><!-- /footer -->
+<!----------------------------------- fin page vente ------------------------------------>
+
+
+<!----------------------------------  page journal des ventes ---------------------------------------->
+<div data-role="page" id="journal">
+   	<div  id="div-header"  data-role="header">
+      <label >ILINE-SOFT</label>
+ 		<a href="#vente"  id="btn-home" data-direction="reverse"  class="ui-btn"  ><</a>
+	    <a href="#parametre" id="btn-home" data-direction="reverse"  class="ui-btn"  >Settings</a>
+ 	  
+	</div>
+   <fieldset id="section-v" >
+       <span id="app-titre-j"></span> 
+   </fieldset>	
+   <fieldset   id="section2-v">
+	  <legend>Journal des Ventes</legend>
+   		<table   class="idata-h" id="idata-hv"  >
+		<tr  >
+		<th width="25%" >Doc</th>
+		<th width="40%" >Date</th>
+ 		<th width="35%" >Montant</th>
+
+		</tr>
+		</table>
+		 
+ 		 <table   id="idata-j"  >
+ 		</table>
+		
+ 	  </fieldset>
+
+     </div><!-- /page -->  
+    <div data-role="footer" data-position="fixed">
+		<h4>Page Footer</h4>
+	</div><!-- /footer -->
+<!----------------------------------- fin page journal vente ------------------------------------>
+
+
+<!----------------------------------  page INVENTAIRE---------------------------------------->
+<div data-role="page" id="inventaire">
+   	<div  id="div-header-i"    data-role="header">
+      <label >ILINE-SOFT</label>
+ 		<a href="#acceuil"  id="btn-home" data-direction="reverse"  class="ui-btn"  ><</a>
+	    <a href="#parametre" id="btn-home" data-direction="reverse"  class="ui-btn"  >Settings</a>
+	</div>
+   <fieldset id="section-i" >
+       <span id="app-titre-i"></span> 
+   </fieldset>	
+    
+    <fieldset id="section_i">
+	  <legend>Code produit</legend>
+		<label>Saisissez un code produit&nbsp;&nbsp;&nbsp;<span id="rechDesI">(Rechercher par désignation)</span></label>
+		<table id="cp">	
+		<tr>
+		<td width="90%">
+		<input  type="hidden"  id="code_p_i" name="code_p_i"  />
+ 		<input  type="text" id="cab_i" name="cab_i"  autofocus  placeholder="Code Produit"  required=""  />
+		</td>
+		<td width="20%">
+ 		<button  class="btn-valider" id="btn-valider-i"  value="valider" />Valider</button> 
+		</td></tr>
+		</table>
+    </fieldset>
+    <fieldset id="section_id">
+	  <legend>Désignation produit</legend>
+		<label>Saisissez une désignation produit&nbsp;&nbsp;&nbsp;<span id="rechCodeI">(Rechercher par code)</span></label>
+		<table id="cp">	
+		<tr>
+		<td width="90%">
+  		<input  type="text" id="des_i" name="des_i"  autofocus  placeholder="Désignation Produit"  required=""  />
+		</td>
+		<td width="20%">
+ 		 
+		</td></tr>
+		</table>
+    </fieldset>
+    <fieldset id="section2id">
+	  <legend>Liste produit</legend>		
+ 		<table   id="idata-id2" style="display:none"  >
+		<tr  >
+		<th width="12%"  align="center">Code</th>
+        <th width="58%"  align="left">Désignation</th>
+		<th width="13%" align="center" >Qte</th>
+		<th width="17%" align="right" >Prix&nbsp;</th>
+		</tr>
+		</table>
+ 		 <table   id="tab-id2"  >
+ 		</table>
+ 	  </fieldset> 
+    <fieldset id="section-qte-i"  class="section-qte">
+	  <legend>Quantité Inventaire</legend>
+		<label>Saisissez une quantité</label>
+		<table id="tab-qte">
+		<tr>
+		<td width="90%">
+ 		<input  type="text" id="qte_tmp_i"   autofocus  placeholder="Quantité"  required=""  />
+		</td>
+		<td width="10%"><button class="btn-valider" id="btn-valider-qte-i"  value="valider" />Valider</button> 
+		</td></tr>
+		
+		</table>
+    </fieldset>
+    <fieldset id="section-message-i"> 
+ 	  <p>&nbsp; <span id="msg_i"></span></p> 
+	</fieldset>	 
+
+    <fieldset   id="section2-i">
+	  <legend>Détail Inventaire</legend>
+ 	   
+	   <table >
+		<tr>
+		<td width="85%"> <label>Nombre d'article lu : <span id="articleLu"></span></label> 	</td>
+		<td width="15%"><button  class="btn-v-i" id="btn-viderEcran-inventaire"   value="valider" />Vider Ecran</button> </td></tr>
+		</table>
+ 		
+		<table   class="idata-h" id="idata-h"  >
+		<tr  >
+		<th width="20%" >Code</th>
+		<th width="60%" >Désignation</th>
+		<th width="10%" >Qte</th>
+		<th width="10%" >Opt</th>
+		</tr>
+		</table>
+		 
+ 		 <table   id="idata-i"  >
+ 		</table>
+		
+ 	  </fieldset>
+	  
+ 
+	 	
+	<fieldset id="section-i-valider">
+	  <legend>Actions</legend>
+ 		<table id="cp">	
+		<tr>
+		<td width="25%"> 
+		<button  class="btn-v-i" id="btn-save-inventaire"  value="valider" />Sauvegarder</button>
+		<button  class="btn-v-i" id="btn-modif-inventaire"  value="valider" />Modifier</button>
+		</td>		
+		<td width="25%"> <button  class="btn-v-i" id="btn-consulter-inventaire"  value="valider" />Consulter</button></td>
+		<td width="25%"> <button  class="btn-v-i" id="btn-valider-inventaire"  value="valider" />Valider</button></td>
+		<td width="25%"> <button  class="btn-v-i" id="btn-vider-inventaire"   value="valider" />Vider</button> </td>
+ 
+		</tr>
+		</table>
+    </fieldset>
+	
+	
+	 
+   </div><!-- /page -->  
+<!----------------------------------- fin page inventaire ------------------------------------>
+ <input  type="hidden" id="client_tmp"     />
+ <input  type="text" id="param_tmp"     />
+   </body>
+ </html>

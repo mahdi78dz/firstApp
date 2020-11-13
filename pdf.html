@@ -1,0 +1,17 @@
+<html>
+<meta name="viewport" content="width=device-width, initial-scale=1"  /> 
+
+<head>
+<script>
+    function print() {
+        var frame = document.getElementById('frame');
+        frame.contentWindow.focus();
+        frame.contentWindow.print();
+    }
+</script>
+</head>
+<body>
+<iframe src="bilan_2019.pdf" id="frame" width="400" height="400"></iframe><br>
+<button onclick="print()">Imprimer le PDF</button>
+</body>
+</html>

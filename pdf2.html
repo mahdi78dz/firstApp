@@ -1,0 +1,23 @@
+<html>
+<meta name="viewport" content="width=device-width, initial-scale=1"  /> 
+
+<head>
+<script>
+    function print(pdf) {
+        // Créer un IFrame.
+        var iframe = document.createElement('iframe');  
+        // Cacher le IFrame.    
+        iframe.style.visibility = "hidden"; 
+        // Définir la source.    
+        iframe.src = pdf;        
+        // Ajouter le IFrame sur la page Web.    
+        document.body.appendChild(iframe);  
+        iframe.contentWindow.focus();       
+        iframe.contentWindow.print(); // Imprimer.
+    }
+</script>
+</head>
+<body>
+    <button onClick="print('bilan_2019.pdf')">Imprimer le PDF</button>
+</body>
+</html>
